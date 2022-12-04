@@ -1,0 +1,18 @@
+[package]
+name = "aoc-2022"
+version = "0.1.0"
+edition = "2021"
+harness = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.66"
+criterion = "0.4.0"
+
+[profile.release]
+overflow-checks = false
+
+[[bench]]
+name = "all_days"
+harness = false
