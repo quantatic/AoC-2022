@@ -1,4 +1,14 @@
 use anyhow::{anyhow, Result};
+use nom::{
+    character::{
+        complete::{newline, one_of},
+        streaming::char,
+    },
+    combinator::{map, opt},
+    multi::separated_list1,
+    sequence::{separated_pair, terminated},
+    IResult,
+};
 
 pub const INPUT: &str = include_str!("./input");
 
@@ -93,76 +103,89 @@ impl GameRound {
     }
 }
 
-fn parse_line_part_one(line: &str) -> Result<RoundPartOne> {
-    let line_components = line.split(" ").collect::<Vec<_>>();
-    if line_components.len() != 2 {
-        return Err(anyhow!(
-            "expected 2 components on line, but got {} in line {line}",
-            line_components.len()
-        ));
-    }
+fn line_part_one(input: &str) -> IResult<&str, RoundPartOne> {
+    map(
+        separated_pair(one_of("ABC"), char(' '), one_of("XYZ")),
+        |(opponent_char, my_char)| {
+            let opponent_choice = match opponent_char {
+                'A' => Choice::Rock,
+                'B' => Choice::Paper,
+                'C' => Choice::Scissors,
+                other => unreachable!("unexpected opponent choice {other}"),
+            };
 
-    let opponent_choice = match line_components[0] {
-        "A" => Choice::Rock,
-        "B" => Choice::Paper,
-        "C" => Choice::Scissors,
-        other => return Err(anyhow!("unexpected opponent choice {other}")),
-    };
+            let my_choice = match my_char {
+                'X' => Choice::Rock,
+                'Y' => Choice::Paper,
+                'Z' => Choice::Scissors,
+                other => unreachable!("unexpected self choice {other}"),
+            };
 
-    let my_choice = match line_components[1] {
-        "X" => Choice::Rock,
-        "Y" => Choice::Paper,
-        "Z" => Choice::Scissors,
-        other => return Err(anyhow!("unexpected self choice {other}")),
-    };
-
-    Ok(RoundPartOne(GameRound {
-        my_choice,
-        opponent_choice,
-    }))
+            RoundPartOne(GameRound {
+                my_choice,
+                opponent_choice,
+            })
+        },
+    )(input)
 }
 
+fn game_part_one(input: &str) -> IResult<&str, Vec<RoundPartOne>> {
+    terminated(separated_list1(newline, line_part_one), opt(newline))(input)
+}
 fn parse_game_part_one(input: &str) -> Result<Vec<RoundPartOne>> {
-    input
-        .lines()
-        .map(parse_line_part_one)
-        .collect::<Result<Vec<_>>>()
-}
+    let (leftover, result) = game_part_one(input).map_err(|err| err.map_input(str::to_string))?;
 
-fn parse_line_part_two(line: &str) -> Result<RoundPartTwo> {
-    let line_components = line.split(" ").collect::<Vec<_>>();
-    if line_components.len() != 2 {
+    if !leftover.is_empty() {
         return Err(anyhow!(
-            "expected 2 components on line, but got {} in line {line}",
-            line_components.len()
+            "expected full input stream to be parsed, but got {:?} left over",
+            leftover
         ));
     }
 
-    let opponent_choice = match line_components[0] {
-        "A" => Choice::Rock,
-        "B" => Choice::Paper,
-        "C" => Choice::Scissors,
-        other => return Err(anyhow!("unexpected opponent choice {other}")),
-    };
+    Ok(result)
+}
 
-    let needed_result = match line_components[1] {
-        "X" => GameRoundResult::Winner(Player::Opponent),
-        "Y" => GameRoundResult::Tie,
-        "Z" => GameRoundResult::Winner(Player::Me),
-        other => return Err(anyhow!("unexpected self choice {other}")),
-    };
+fn line_part_two(input: &str) -> IResult<&str, RoundPartTwo> {
+    map(
+        separated_pair(one_of("ABC"), char(' '), one_of("XYZ")),
+        |(opponent_char, my_char)| {
+            let opponent_choice = match opponent_char {
+                'A' => Choice::Rock,
+                'B' => Choice::Paper,
+                'C' => Choice::Scissors,
+                other => unreachable!("unexpected opponent choice {other}"),
+            };
 
-    Ok(RoundPartTwo {
-        opponent_choice,
-        needed_result,
-    })
+            let needed_result = match my_char {
+                'X' => GameRoundResult::Winner(Player::Opponent),
+                'Y' => GameRoundResult::Tie,
+                'Z' => GameRoundResult::Winner(Player::Me),
+                other => unreachable!("unexpected self choice {other}"),
+            };
+
+            RoundPartTwo {
+                needed_result,
+                opponent_choice,
+            }
+        },
+    )(input)
+}
+
+fn game_part_two(input: &str) -> IResult<&str, Vec<RoundPartTwo>> {
+    terminated(separated_list1(newline, line_part_two), opt(newline))(input)
 }
 
 fn parse_game_part_two(input: &str) -> Result<Vec<RoundPartTwo>> {
-    input
-        .lines()
-        .map(parse_line_part_two)
-        .collect::<Result<Vec<_>>>()
+    let (leftover, result) = game_part_two(input).map_err(|err| err.map_input(str::to_string))?;
+
+    if !leftover.is_empty() {
+        return Err(anyhow!(
+            "expected full input stream to be parsed, but got {:?} left over",
+            leftover
+        ));
+    }
+
+    Ok(result)
 }
 
 pub fn part_one(input: &str) -> Result<u32> {

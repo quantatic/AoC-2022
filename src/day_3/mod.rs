@@ -1,6 +1,13 @@
 use std::collections::HashSet;
 
 use anyhow::{anyhow, Result};
+use nom::{
+    character::complete::{alpha1, char, newline},
+    combinator::{map, opt, verify},
+    multi::separated_list1,
+    sequence::{terminated, tuple},
+    IResult, Parser,
+};
 
 pub const INPUT: &str = include_str!("./input");
 
@@ -9,34 +16,45 @@ struct ElfGroup(HashSet<char>, HashSet<char>, HashSet<char>);
 
 fn get_priority(val: char) -> Result<u8> {
     let priority = match val {
-        'a'..='z' => (val as u8) - ('a' as u8) + 1,
-        'A'..='Z' => (val as u8) - ('A' as u8) + 27,
+        'a'..='z' => (val as u8) - b'a' + 1,
+        'A'..='Z' => (val as u8) - b'A' + 27,
         _ => return Err(anyhow!("expected alphabetic character, but got {}", val)),
     };
 
     Ok(priority)
 }
 
-fn parse_part_one(input: &str) -> Result<Vec<Rucksack>> {
-    input
-        .lines()
-        .map(|line| {
-            let chars = line.chars().collect::<Vec<_>>();
-            if chars.len() % 2 != 0 {
-                return Err(anyhow!(
-                    "expected line {} to have length divisible by two",
-                    line
-                ));
-            }
-
+fn rucksack(input: &str) -> IResult<&str, Rucksack> {
+    map(
+        verify(alpha1, |s: &str| s.chars().count() % 2 == 0),
+        |s: &str| {
+            let chars = s.chars().collect::<Vec<_>>();
             let (first_half, second_half) = chars.split_at(chars.len() / 2);
 
-            let compartment_one = first_half.iter().cloned().collect();
-            let compartment_two = second_half.iter().cloned().collect();
+            let compartment_one = first_half.iter().copied().collect();
+            let compartment_two = second_half.iter().copied().collect();
 
-            Ok(Rucksack(compartment_one, compartment_two))
-        })
-        .collect::<Result<Vec<_>>>()
+            Rucksack(compartment_one, compartment_two)
+        },
+    )(input)
+}
+
+fn full_parser_part_one(input: &str) -> IResult<&str, Vec<Rucksack>> {
+    terminated(separated_list1(newline, rucksack), opt(newline))(input)
+}
+
+fn parse_part_one(input: &str) -> Result<Vec<Rucksack>> {
+    let (leftover, result) =
+        full_parser_part_one(input).map_err(|err| err.map_input(str::to_string))?;
+
+    if !leftover.is_empty() {
+        return Err(anyhow!(
+            "expected full input stream to be parsed, but got {:?} left over",
+            leftover
+        ));
+    }
+
+    Ok(result)
 }
 
 pub fn part_one(input: &str) -> Result<u32> {
@@ -62,29 +80,35 @@ pub fn part_one(input: &str) -> Result<u32> {
     Ok(line_values.into_iter().map(u32::from).sum())
 }
 
-fn parse_part_two(input: &str) -> Result<Vec<ElfGroup>> {
-    let mut elves = input
-        .lines()
-        .map(|line| line.chars().collect::<HashSet<_>>())
-        .collect::<Vec<_>>();
+fn elf_group(input: &str) -> IResult<&str, ElfGroup> {
+    map(
+        tuple((alpha1, newline, alpha1, newline, alpha1)),
+        |(elf_one, _, elf_two, _, elf_three): (&str, _, &str, _, &str)| {
+            ElfGroup(
+                elf_one.chars().collect(),
+                elf_two.chars().collect(),
+                elf_three.chars().collect(),
+            )
+        },
+    )(input)
+}
 
-    if elves.len() % 3 != 0 {
+fn full_parser_part_two(input: &str) -> IResult<&str, Vec<ElfGroup>> {
+    separated_list1(char('\n'), elf_group)(input)
+}
+
+fn parse_part_two(input: &str) -> Result<Vec<ElfGroup>> {
+    let (leftover, result) =
+        full_parser_part_two(input).map_err(|err| err.map_input(str::to_string))?;
+
+    if !leftover.is_empty() {
         return Err(anyhow!(
-            "expected number of elves to be divisible by 3, but got {} elves",
-            elves.len()
+            "expected full input stream to be parsed, but got {:?} left over",
+            leftover
         ));
     }
 
-    let mut groups = Vec::new();
-    for _ in 0..(elves.len() / 3) {
-        groups.push(ElfGroup(
-            elves.pop().unwrap(),
-            elves.pop().unwrap(),
-            elves.pop().unwrap(),
-        ))
-    }
-
-    Ok(groups)
+    Ok(result)
 }
 
 pub fn part_two(input: &str) -> Result<u32> {

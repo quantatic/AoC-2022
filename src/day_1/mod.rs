@@ -1,26 +1,43 @@
 use anyhow::{anyhow, Result};
-use criterion::{criterion_group, criterion_main, Criterion};
+
 use std::collections::BinaryHeap;
+
+use nom::{
+    character::complete::{newline, u32},
+    combinator::{map, opt},
+    multi::{count, separated_list1},
+    sequence::terminated,
+    IResult,
+};
 
 pub const INPUT: &str = include_str!("./input");
 
-fn get_calories_list(input: &str) -> Result<Vec<u32>> {
-    let lines = input.lines().collect::<Vec<_>>();
-    lines
-        .split(|line| line.is_empty())
-        .map(|grouping| {
-            let values = grouping
-                .iter()
-                .map(|line| line.parse::<u32>())
-                .collect::<Result<Vec<_>, _>>()?;
+fn single_calorie_count(input: &str) -> IResult<&str, u32> {
+    map(separated_list1(newline, u32), |list| list.into_iter().sum())(input)
+}
 
-            Ok(values.into_iter().sum())
-        })
-        .collect::<Result<Vec<_>>>()
+fn calories_list(input: &str) -> IResult<&str, Vec<u32>> {
+    terminated(
+        separated_list1(count(newline, 2), single_calorie_count),
+        opt(newline),
+    )(input)
+}
+
+fn parse_calories_list(input: &str) -> Result<Vec<u32>> {
+    let (leftover, result) = calories_list(input).map_err(|err| err.map_input(str::to_string))?;
+
+    if !leftover.is_empty() {
+        return Err(anyhow!(
+            "expected full input stream to be parsed, but got {:?} left over",
+            leftover
+        ));
+    }
+
+    Ok(result)
 }
 
 pub fn part_one(input: &str) -> Result<u32> {
-    let elf_calories = get_calories_list(input)?;
+    let elf_calories = parse_calories_list(input)?;
 
     Ok(elf_calories
         .into_iter()
@@ -31,7 +48,7 @@ pub fn part_one(input: &str) -> Result<u32> {
 pub fn part_two(input: &str) -> Result<u32> {
     const NUM_ITEMS: usize = 3;
 
-    let elf_calories = get_calories_list(input)?;
+    let elf_calories = parse_calories_list(input)?;
 
     let mut heap = elf_calories.into_iter().collect::<BinaryHeap<_>>();
     let mut result = 0;
