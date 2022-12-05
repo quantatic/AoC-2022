@@ -21,15 +21,10 @@ struct ElfAssignmentPair(ElfAssignment, ElfAssignment);
 
 impl ElfAssignmentPair {
     fn fully_overlaps(&self) -> bool {
-        if self.0.start >= self.1.start && self.0.end <= self.1.end {
-            // first pair is fully contained in second
-            true
-        } else if self.0.start <= self.1.start && self.0.end >= self.1.end {
-            // second pair is fully contained in first
-            true
-        } else {
-            false
-        }
+        let first_in_second = self.0.start >= self.1.start && self.0.end <= self.1.end;
+        let second_in_first = self.0.start <= self.1.start && self.0.end >= self.1.end;
+
+        first_in_second || second_in_first
     }
 
     fn has_overlap(&self) -> bool {
