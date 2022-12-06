@@ -1,24 +1,31 @@
-use std::collections::{BTreeSet, HashSet, VecDeque};
+use std::collections::{btree_map::Entry, BTreeMap};
 
 use anyhow::{anyhow, Error, Result};
 
-
 pub const INPUT: &str = include_str!("./input");
 
-pub fn part_one(input: &str) -> Result<u32> {
-    const NUM_DISTINCT: usize = 4;
+fn calculate_solution(input: &str, num_needed: usize) -> Result<u32> {
+    let chars = input.chars().collect::<Vec<_>>();
+    let mut seen: BTreeMap<char, u32> = BTreeMap::new();
+    for c in chars[..num_needed].iter().copied() {
+        *seen.entry(c).or_insert(0) += 1;
+    }
 
-    let mut chars = input.chars().collect::<Vec<_>>();
-    let mut seen = chars.drain(0..(NUM_DISTINCT - 1)).collect::<VecDeque<_>>();
+    for (i, c) in chars[num_needed..].into_iter().copied().enumerate() {
+        *seen.entry(c).or_insert(0) += 1;
+        match seen.entry(chars[i]) {
+            Entry::Occupied(mut occupied) => {
+                *occupied.get_mut() -= 1;
+                if *occupied.get() == 0 {
+                    occupied.remove();
+                }
+            }
+            Entry::Vacant(_) => return Err(anyhow!("expected to find character {:?} at index {} leaving sliding window in map, but found nothing", chars[i], i)),
+        };
 
-    for (i, c) in chars.into_iter().enumerate() {
-        seen.push_back(c);
-
-        if seen.iter().collect::<BTreeSet<_>>().len() == NUM_DISTINCT {
-            return u32::try_from(i + NUM_DISTINCT).map_err(Error::from);
+        if seen.len() == num_needed {
+            return u32::try_from(i + num_needed + 1).map_err(Error::from);
         }
-
-        seen.pop_front();
     }
 
     Err(anyhow!(
@@ -26,25 +33,16 @@ pub fn part_one(input: &str) -> Result<u32> {
     ))
 }
 
+pub fn part_one(input: &str) -> Result<u32> {
+    const NUM_DISTINCT: usize = 4;
+
+    calculate_solution(input, NUM_DISTINCT)
+}
+
 pub fn part_two(input: &str) -> Result<u32> {
     const NUM_DISTINCT: usize = 14;
 
-    let mut chars = input.chars().collect::<Vec<_>>();
-    let mut seen = chars.drain(0..(NUM_DISTINCT - 1)).collect::<VecDeque<_>>();
-
-    for (i, c) in chars.into_iter().enumerate() {
-        seen.push_back(c);
-
-        if seen.iter().collect::<HashSet<_>>().len() == NUM_DISTINCT {
-            return u32::try_from(i + NUM_DISTINCT).map_err(Error::from);
-        }
-
-        seen.pop_front();
-    }
-
-    Err(anyhow!(
-        "exhaused entire input stream without finding signal"
-    ))
+    calculate_solution(input, NUM_DISTINCT)
 }
 
 #[cfg(test)]
