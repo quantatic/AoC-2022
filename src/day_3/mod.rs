@@ -6,7 +6,7 @@ use nom::{
     combinator::{map, opt, verify},
     multi::separated_list1,
     sequence::{terminated, tuple},
-    IResult, Parser,
+    IResult,
 };
 
 pub const INPUT: &str = include_str!("./input");

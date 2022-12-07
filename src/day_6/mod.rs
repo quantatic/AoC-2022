@@ -11,7 +11,7 @@ fn calculate_solution(input: &str, num_needed: usize) -> Result<u32> {
         *seen.entry(c).or_insert(0) += 1;
     }
 
-    for (i, c) in chars[num_needed..].into_iter().copied().enumerate() {
+    for (i, c) in chars[num_needed..].iter().copied().enumerate() {
         *seen.entry(c).or_insert(0) += 1;
         match seen.entry(chars[i]) {
             Entry::Occupied(mut occupied) => {

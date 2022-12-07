@@ -4,6 +4,7 @@ use aoc_2022::day_3;
 use aoc_2022::day_4;
 use aoc_2022::day_5;
 use aoc_2022::day_6;
+use aoc_2022::day_7;
 use criterion::criterion_group;
 use criterion::criterion_main;
 use criterion::{black_box, Criterion};
@@ -134,4 +135,25 @@ fn benchmark_day_6(c: &mut Criterion) {
 
 criterion_group!(day_06, benchmark_day_6);
 
-criterion_main!(day_01, day_02, day_03, day_04, day_05, day_06);
+// DAY 7
+fn benchmark_day_7(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Day 7");
+
+    group.bench_function("Part One", |b| {
+        b.iter(|| {
+            let result = day_7::part_one(black_box(day_7::INPUT)).unwrap();
+            assert_eq!(result, 1_723_892);
+        })
+    });
+
+    group.bench_function("Part Two", |b| {
+        b.iter(|| {
+            let result = day_7::part_two(black_box(day_7::INPUT)).unwrap();
+            assert_eq!(result, 8_474_158);
+        })
+    });
+}
+
+criterion_group!(day_07, benchmark_day_7);
+
+criterion_main!(day_01, day_02, day_03, day_04, day_05, day_06, day_07);
