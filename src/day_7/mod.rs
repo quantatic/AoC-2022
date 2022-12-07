@@ -1,6 +1,4 @@
-use std::{
-    collections::{HashMap},
-};
+use std::collections::BTreeMap;
 
 use anyhow::{anyhow, Result};
 use nom::{
@@ -98,7 +96,7 @@ fn parse_problem_statement(input: &str) -> Result<ProblemStatement> {
 #[derive(Debug)]
 struct DirNode {
     name: String,
-    children_idx: HashMap<String, usize>,
+    children_idx: BTreeMap<String, usize>,
     parent_idx: usize,
 }
 
@@ -133,7 +131,7 @@ impl Fs {
     fn new() -> Self {
         let root_node = FsNode::Dir(DirNode {
             name: "/".to_string(),
-            children_idx: HashMap::new(),
+            children_idx: BTreeMap::new(),
             parent_idx: 0,
         });
 
@@ -178,7 +176,7 @@ impl Fs {
         let new_file = match file_info {
             FileInfo::Directory(name) => FsNode::Dir(DirNode {
                 name,
-                children_idx: HashMap::new(),
+                children_idx: BTreeMap::new(),
                 parent_idx: self.current_directory_idx,
             }),
             FileInfo::File { name, size } => FsNode::File(FileNode { name, size }),
@@ -260,9 +258,9 @@ pub fn part_two(input: &str) -> Result<u32> {
         })
         .filter(|&dir_size| dir_size >= minimum_deletion_size)
         .min()
-        .ok_or_else(|| anyhow!(
-            "couldn't find any files meeting the necessary deletion requirements"
-        ))
+        .ok_or_else(|| {
+            anyhow!("couldn't find any files meeting the necessary deletion requirements")
+        })
 }
 
 #[cfg(test)]
