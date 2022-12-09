@@ -5,6 +5,8 @@ use aoc_2022::day_4;
 use aoc_2022::day_5;
 use aoc_2022::day_6;
 use aoc_2022::day_7;
+use aoc_2022::day_8;
+use aoc_2022::day_9;
 use criterion::criterion_group;
 use criterion::criterion_main;
 use criterion::{black_box, Criterion};
@@ -156,4 +158,46 @@ fn benchmark_day_7(c: &mut Criterion) {
 
 criterion_group!(day_07, benchmark_day_7);
 
-criterion_main!(day_01, day_02, day_03, day_04, day_05, day_06, day_07);
+// DAY 8
+fn benchmark_day_8(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Day 8");
+
+    group.bench_function("Part One", |b| {
+        b.iter(|| {
+            let result = day_8::part_one(black_box(day_8::INPUT)).unwrap();
+            assert_eq!(result, 1_669);
+        })
+    });
+
+    group.bench_function("Part Two", |b| {
+        b.iter(|| {
+            let result = day_8::part_two(black_box(day_8::INPUT)).unwrap();
+            assert_eq!(result, 331_344);
+        })
+    });
+}
+
+criterion_group!(day_08, benchmark_day_8);
+
+// DAY 9
+fn benchmark_day_9(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Day 9");
+
+    group.bench_function("Part One", |b| {
+        b.iter(|| {
+            let result = day_9::part_one(black_box(day_9::INPUT)).unwrap();
+            assert_eq!(result, 5_878);
+        })
+    });
+
+    group.bench_function("Part Two", |b| {
+        b.iter(|| {
+            let result = day_9::part_two(black_box(day_9::INPUT)).unwrap();
+            assert_eq!(result, 2_405);
+        })
+    });
+}
+
+criterion_group!(day_09, benchmark_day_9);
+
+criterion_main!(day_01, day_02, day_03, day_04, day_05, day_06, day_07, day_08, day_09);
